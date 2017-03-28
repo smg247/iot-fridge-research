@@ -90,4 +90,4 @@ ENV/
 
 .idea/
 
-api_interaction/properties.py
+properties.py

@@ -2,7 +2,7 @@ import requests
 import mysql.connector as connector
 from random import randint
 
-from .properties import *
+from properties import *
 
 
 SEARCH_URL = 'http://food2fork.com/api/search'
