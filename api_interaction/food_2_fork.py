@@ -33,18 +33,21 @@ def execute():
 
 def create_new_recipe(cursor, recipe_content):
     name = recipe_content['title']
-    if not recipe_exists(cursor, name):
+    recipe_id = find_recipe(cursor, name)
+    if not recipe_id:
         recipe_id = insert_recipe(cursor, name)
-        for ingredient in recipe_content['ingredients']:
-            ingredient = format_ingredient(ingredient)
-            matching_product = matches_existing_product(ingredient)
 
-            if matching_product:
-                product_id = find_product(cursor, matching_product)
-            else:
-                products.append(ingredient)
-                product_id = insert_product(cursor, ingredient)
+    for ingredient in recipe_content['ingredients']:
+        ingredient = format_ingredient(ingredient)
+        matching_product = matches_existing_product(ingredient)
 
+        if matching_product:
+            product_id = find_product(cursor, matching_product)
+        else:
+            products.append(ingredient)
+            product_id = insert_product(cursor, ingredient)
+
+        if not find_ingredient(cursor, product_id, recipe_id):
             insert_ingredient(cursor, product_id, recipe_id, randomize_amount())
 
 
@@ -91,11 +94,19 @@ def insert_ingredient(cursor, product_id, recipe_id, amount):
     cursor.execute(create_ingredient, (product_id, recipe_id, amount))
 
 
-def recipe_exists(cursor, name):
-    recipe_query = 'select * from recipe where name = (%s)'
+def find_recipe(cursor, name):
+    recipe_query = 'select id from recipe where name = (%s)'
     cursor.execute(recipe_query, (name,))
-    for _ in cursor:
-        return True
+    for recipe in cursor:
+        return recipe[0]
+    return False
+
+
+def find_ingredient(cursor, product_id, recipe_id):
+    ingredient_query = 'select id from ingredient where product = (%s) and recipe = (%s)'
+    cursor.execute(ingredient_query, (product_id, recipe_id))
+    for ingredient in cursor:
+        return ingredient[0]
     return False
 
 
