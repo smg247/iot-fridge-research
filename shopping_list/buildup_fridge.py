@@ -11,7 +11,7 @@ products = []
 def execute():
     cnx = connector.connect(user=DB_USER, password=DB_PASS, host=DB_HOST, database=DB_NAME)
     cursor = cnx.cursor()
-    cursor.execute('delete from UserProduct') # TODO
+    cursor.execute('delete from UserProduct')
     initialize_products(cursor)
     fridge = numpy.zeros(shape=(NUM_SHELVES - 1, GRID_SIZE - 1, GRID_SIZE - 1))
 
@@ -115,6 +115,3 @@ def find_product_id(cursor, name):
 
 def should_insert_product():
     return randint(0, 3) % 3 == 0
-
-
-execute()

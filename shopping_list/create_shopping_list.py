@@ -2,25 +2,24 @@ import mysql.connector as connector
 
 from properties import *
 
-NUMBER_OF_MEALS_NEEDED = 50
+NUMBER_OF_MEALS_NEEDED = 7
 
 recipes = {}
 owned_ingredients = []
 
-def execute():
+def execute(using_weight):
     cnx = connector.connect(user=DB_USER, password=DB_PASS, host=DB_HOST, database=DB_NAME)
     cursor = cnx.cursor()
     initialize_recipes(cursor)
     initialize_owned_ingredients(cursor)
 
     for recipe in recipes.values():
-        ingredients_needed = determine_ingredients_needed_to_make_recipe(recipe, True) # TODO
+        ingredients_needed = determine_ingredients_needed_to_make_recipe(recipe, using_weight)
         recipe.set_ingredients_to_buy(ingredients_needed)
         if (len(ingredients_needed) == 0):
             print('we have all the ingredients to make: ' + recipe.get_name())
 
     determine_ingredients_on_shopping_list()
-    print('test')
 
 
 def initialize_recipes(cursor):
@@ -95,7 +94,7 @@ def determine_ingredients_on_shopping_list():
         sorted_recipes = sort_recipes(sorted_recipes)
         number_of_recipes_added += 1
 
-        print('     to make: ' + sorted_recipes[0].get_name())
+        print('     to make: ' + recipe.get_name())
 
 
 def sort_recipes(recipes):
@@ -163,6 +162,3 @@ class Ingredient():
 
     def add_amount(self, amount_to_add):
         self.amount = self.amount + amount_to_add
-
-
-execute()
