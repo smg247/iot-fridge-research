@@ -1,13 +1,19 @@
 import mysql.connector as connector
+import collections
 
 from properties import *
-
-NUMBER_OF_MEALS_NEEDED = 7
 
 recipes = {}
 owned_ingredients = []
 
-def execute(using_weight):
+owned_ingredients_used = []
+
+
+def execute(using_weight, number_of_meals, print_verbose):
+    recipes.clear()
+    owned_ingredients_used.clear()
+    owned_ingredients.clear()
+
     cnx = connector.connect(user=DB_USER, password=DB_PASS, host=DB_HOST, database=DB_NAME)
     cursor = cnx.cursor()
     initialize_recipes(cursor)
@@ -19,7 +25,8 @@ def execute(using_weight):
         if (len(ingredients_needed) == 0):
             print('we have all the ingredients to make: ' + recipe.get_name())
 
-    determine_ingredients_on_shopping_list()
+    determine_ingredients_on_shopping_list(using_weight, number_of_meals, print_verbose)
+    calculate_metrics()
 
 
 def initialize_recipes(cursor):
@@ -72,34 +79,49 @@ def determine_amount_of_ingredient_needed(owned_ingredient, ingredient, using_we
         amount_owned = owned_ingredient.get_amount()
         return amount_owned - amount_needed
     else:
-        return amount_needed
+        return -1 # If we don't know how much we have we will only be able to assume we have enough
 
 
-def determine_ingredients_on_shopping_list():
+def determine_ingredients_on_shopping_list(using_weight, number_of_meals, print_verbose):
     number_of_recipes_added = 0
     sorted_recipes = sort_recipes(recipes.values())
-    while number_of_recipes_added < NUMBER_OF_MEALS_NEEDED:
+    while number_of_recipes_added < number_of_meals:
         recipe = sorted_recipes[0]
         sorted_recipes = sorted_recipes[1:]
-        for ingredient in recipe.get_ingredients_to_buy():
-            if (ingredient.get_amount() > 0):
-                print('buying: ' + str(ingredient.get_amount()) + 'g of ' + ingredient.get_name())
-            else:
-                print('I will still have: ' + str(abs(ingredient.get_amount())) + 'g of ' + ingredient.get_name())
+        if recipe.is_valid():
+            for ingredient in recipe.get_ingredients_to_buy():
+                if (ingredient.get_amount() > 0):
+                    if print_verbose:
+                        print('buying: ' + str(ingredient.get_amount()) + 'g of ' + ingredient.get_name())
+                elif using_weight:
+                    owned_ingredients_used.append(ingredient.get_name())
+                    if print_verbose:
+                        print('I will still have: ' + str(abs(ingredient.get_amount())) + 'g of ' + ingredient.get_name())
+                else:
+                    owned_ingredients_used.append(ingredient.get_name())
+                    if print_verbose:
+                        print('I already have: ' + ingredient.get_name())
 
-            matching_ingredient = recipe.get_matching_ingredient(ingredient) # The total amount of the ingredient this recipe will use
-            for sorted_recipe in sorted_recipes:
-                sorted_recipe.add_amount_to_ingredient_to_buy(matching_ingredient.get_amount(), ingredient.get_product_id())
+                if using_weight: # Otherwise we won't know if we have enough or not, no reason to change the amount when we never knew it in the first place
+                    matching_ingredient = recipe.get_matching_ingredient(ingredient) # The total amount of the ingredient this recipe will use
+                    for sorted_recipe in sorted_recipes:
+                        sorted_recipe.add_amount_to_ingredient_to_buy(matching_ingredient.get_amount(), ingredient.get_product_id())
 
-        sorted_recipes = sort_recipes(sorted_recipes)
-        number_of_recipes_added += 1
+            sorted_recipes = sort_recipes(sorted_recipes)
+            number_of_recipes_added += 1
 
-        print('     to make: ' + recipe.get_name())
+            if print_verbose:
+                print('     to make: ' + recipe.get_name())
 
 
 def sort_recipes(recipes):
     # return sorted(recipes, key=lambda recipe: recipe.get_name())
     return sorted(recipes, key=lambda recipe: recipe.get_number_of_ingredients_to_buy())
+
+
+def calculate_metrics():
+    ingredients_used_multiple_times = [ingredient for ingredient, count, in collections.Counter(owned_ingredients_used).items() if count > 1]
+    print(ingredients_used_multiple_times)
 
 
 class Recipe():
@@ -140,6 +162,9 @@ class Recipe():
         for ingredient in self.ingredients:
             if ingredient.get_product_id() == ingredient_to_buy.get_product_id():
                 return ingredient
+
+    def is_valid(self): # Recipes that are too simple make for less interesting results
+        return len(self.ingredients) > 4
 
 
 class Ingredient():

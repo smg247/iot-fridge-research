@@ -5,9 +5,9 @@ from shopping_list.create_shopping_list import execute as create_shopping_list
 def execute():
     buildup_fridge()
 
-    create_shopping_list(True)
+    create_shopping_list(True, 50, False)
     print('\n\n\n\n\n\n')
-    create_shopping_list(False)
+    create_shopping_list(False, 50, False)
 
 
 execute()
