@@ -26,7 +26,7 @@ def execute(using_weight, number_of_meals, print_verbose):
             print('we have all the ingredients to make: ' + recipe.get_name())
 
     determine_ingredients_on_shopping_list(using_weight, number_of_meals, print_verbose)
-    calculate_metrics()
+    return calculate_metrics()
 
 
 def initialize_recipes(cursor):
@@ -115,13 +115,12 @@ def determine_ingredients_on_shopping_list(using_weight, number_of_meals, print_
 
 
 def sort_recipes(recipes):
-    # return sorted(recipes, key=lambda recipe: recipe.get_name())
     return sorted(recipes, key=lambda recipe: recipe.get_number_of_ingredients_to_buy())
 
 
 def calculate_metrics():
     ingredients_used_multiple_times = [ingredient for ingredient, count, in collections.Counter(owned_ingredients_used).items() if count > 1]
-    print(ingredients_used_multiple_times)
+    return ingredients_used_multiple_times
 
 
 class Recipe():

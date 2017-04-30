@@ -3,21 +3,19 @@ from random import randint
 import numpy
 from properties import *
 
-NUM_SHELVES = 4
-GRID_SIZE = 10
 products = []
 
 
-def execute():
+def execute(num_shelves, grid_size):
     cnx = connector.connect(user=DB_USER, password=DB_PASS, host=DB_HOST, database=DB_NAME)
     cursor = cnx.cursor()
     cursor.execute('delete from UserProduct')
     initialize_products(cursor)
-    fridge = numpy.zeros(shape=(NUM_SHELVES - 1, GRID_SIZE - 1, GRID_SIZE - 1))
+    fridge = numpy.zeros(shape=(num_shelves - 1, grid_size - 1, grid_size - 1))
 
     for product in products:
         if should_insert_product():
-            if not put_product_into_fridge(cursor, fridge, product): # we ran out of space
+            if not put_product_into_fridge(cursor, fridge, product, grid_size): # we ran out of space
                 break
 
     cnx.commit()
@@ -30,8 +28,8 @@ def initialize_products(cursor):
         products.append(product[0])
 
 
-def put_product_into_fridge(cursor, fridge, product_name):
-    shape, weight = determine_size_of_product(cursor, product_name)
+def put_product_into_fridge(cursor, fridge, product_name, grid_size):
+    shape, weight = determine_size_of_product(cursor, product_name, grid_size)
     return place_item_in_fridge(cursor, fridge, shape, weight, product_name)
 
 
@@ -40,8 +38,8 @@ def insert_user_product(cursor, product_id, weight_left, x_loc, y_loc, shelf):
     cursor.execute(insert_product, (product_id, weight_left, x_loc, y_loc, shelf))
 
 
-def determine_size_of_product(cursor, product_name):
-    shape = (randint(1, GRID_SIZE/2), randint(1, GRID_SIZE/2))
+def determine_size_of_product(cursor, product_name, grid_size):
+    shape = (randint(1, grid_size/2), randint(1, grid_size/2))
     weight = randint(10, get_total_product_size(cursor, product_name))
     return shape, weight
 
